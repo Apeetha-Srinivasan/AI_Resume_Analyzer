@@ -113,8 +113,10 @@ Allows users to download the analysis as a PDF report.
                  │
                  ▼
       Resume Insights & Report
+```
+---
 
-📊 Analysis Output
+## 📊 Analysis Output
 
 | Feature                  | Description                                    |
 | ------------------------ | ---------------------------------------------- |
@@ -129,28 +131,34 @@ Allows users to download the analysis as a PDF report.
 
 ---
 
-🛠️ Tech Stack
-Programming
-Python
-Generative AI
-Google Gemini
-Generative AI
-Prompt Engineering
-Web Application
-Streamlit
-PDF Processing
-pypdf
-PyPDF2
-Report Generation
-ReportLab
-Development Tools
-Git
-GitHub
-Python Virtual Environment
+## 🛠️ Tech Stack
+
+### Programming
+- Python
+
+### Generative AI
+- Google Gemini
+- Generative AI
+- Prompt Engineering
+
+### Web Application
+- Streamlit
+
+### PDF Processing
+- pypdf
+- PyPDF2
+
+### Report Generation
+- ReportLab
+
+### Development Tools
+- Git
+- GitHub
+- Python Virtual Environment
 
 ---
 
-📁 Project Structure
+## 📁 Project Structure
 AI_Resume_Analyzer/
 │
 ├── app.py
@@ -162,21 +170,35 @@ AI_Resume_Analyzer/
 
 The venv/ directory is used only for local development and should not be uploaded to GitHub.
 
-⚙️ Installation
-1. Clone the Repository
+---
+
+## ⚙️ Installation
+
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/Apeetha-Srinivasan/AI_Resume_Analyzer.git
+
 2. Navigate to the Project
+```bash
 cd AI_Resume_Analyzer
+
 3. Create a Virtual Environment
+```bash
 python -m venv venv
+
 4. Activate the Environment
-
 For Windows:
-
+```bash
 venv\Scripts\activate
+
 5. Install Dependencies
+```bash
 pip install -r requirements.txt
-🔑 API Key Configuration
+
+```
+
+## 🔑 API Key Configuration
 
 This application uses the Google Gemini API for resume analysis.
 
@@ -186,7 +208,7 @@ For the deployed Streamlit application, the API key is configured securely using
 
 For local development, configure your Gemini API key using a secure environment variable or local secrets configuration.
 
-▶️ Run Locally
+## ▶️ Run Locally
 
 After installing the dependencies, run:
 
@@ -194,7 +216,7 @@ streamlit run app.py
 
 The application will open in your browser.
 
-🌐 Deployment
+## 🌐 Deployment
 
 The application is deployed using Streamlit Community Cloud.
 
@@ -204,40 +226,45 @@ Apeetha-Srinivasan/AI_Resume_Analyzer
 
 Changes pushed to the main branch can trigger an automatic redeployment of the application.
 
-🎯 Project Objective
+---
+
+## 🎯 Project Objective
 
 The objective of this project is to build a practical Generative AI application that helps job seekers understand their resumes and identify opportunities for improvement.
 
 The project combines:
 
-PDF text extraction
-Generative AI
-Structured prompting
-JSON-based AI responses
-Streamlit
-PDF report generation
+- 📄 PDF text extraction
+- 🤖 Generative AI
+- ✍️ Structured prompting
+- 📋 JSON-based AI responses
+- 🖥️ Streamlit
+- 📑 PDF report generation
 
 to create an end-to-end resume analysis application.
 
-🔮 Future Improvements
+---
+
+## 🔮 Future Improvements
 
 Potential future enhancements include:
 
-🔎 Job Description vs Resume matching
-📊 Keyword analysis
-🎯 Job-specific ATS analysis
-🧠 More advanced skill extraction
-📈 Resume analytics and visualizations
-📄 Support for additional document formats
-🔐 Improved privacy and data handling
-🎯 More detailed role recommendations
-👩‍💻 Author
-Apeetha Srinivasan
+- 🔎 Job Description vs Resume matching
+- 📊 Keyword analysis
+- 🎯 Job-specific ATS analysis
+- 🧠 More advanced skill extraction
+- 📈 Resume analytics and visualizations
+- 📄 Support for additional document formats
+- 🔐 Improved privacy and data handling
+- 🎯 More detailed role recommendations
+  
+## 👩‍💻 Author
 
-Data Science | Machine Learning | NLP | Generative AI
+**Apeetha Srinivasan**
 
-Master of Computer Applications – Data Science
-
+- Data Science | Machine Learning | NLP | Generative AI
+- Master of Computer Applications – Data Science
+  
 ⭐ Feedback
 
 If you find this project interesting, feel free to explore the repository and try the live application.
