@@ -2,7 +2,9 @@ import os
 import json
 import html
 import hashlib
+import re
 from io import BytesIO
+from textwrap import dedent
 from datetime import date
 
 import streamlit as st
@@ -53,87 +55,156 @@ CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
-    --ink:       #14142B;
-    --ink-soft:  #4A4B63;
-    --muted:     #7B7C92;
-    --line:      #E4E6EF;
-    --canvas:    #F4F5F9;
+    --ink:       #24141B;
+    --ink-soft:  #5F4A52;
+    --muted:     #806B73;
+
+    --line:      #E8D7DE;
+    --canvas:    #FBF6F8;
     --surface:   #FFFFFF;
-    --indigo:    #3D2E8F;
-    --indigo-dk: #1B1A4A;
-    --good:      #1F9254;
-    --warn:      #B7791F;
-    --bad:       #C23B3B;
+
+    --burgundy:  #941B3D;
+    --burgundy-dark: #5A1027;
+    --burgundy-soft: #F8E8EE;
+
+    --rose:      #D94F7A;
+    --rose-soft: #FCEEF3;
+
+    --good:      #23845F;
+    --good-soft: #EAF6F0;
+
+    --warn:      #C58418;
+    --warn-soft: #FFF5DF;
+
+    --bad:       #C43D4B;
+    --bad-soft:  #FBEAEC;
 }
 
-html, body, [class*="css"] { font-family: 'Inter', system-ui, sans-serif; }
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    font-size: 16px;
+}
 
 .stApp { background: var(--canvas); }
-#MainMenu, footer, header { visibility: hidden; }
+#MainMenu, footer { visibility: hidden; }
 
 .block-container {
     padding: 1.25rem 2.25rem 3rem;
     max-width: 1320px;
 }
 
+/* Reduce Streamlit's top header height */
+header[data-testid="stHeader"] {
+    height: 32px;
+    background: transparent;
+}
+
+/* Keep the sidebar collapse/expand control visible */
+header[data-testid="stHeader"] button {
+    top: 4px;
+}
+
+/* Remove excess top padding from the main content */
+.block-container {
+    padding-top: 0.8rem !important;
+}
+
 /* ---------------- sidebar ---------------- */
 
 section[data-testid="stSidebar"] {
-    background: var(--indigo-dk);
+    background: linear-gradient(
+        180deg,
+        #5A1027 0%,
+        #6F1734 55%,
+        #4A0D20 100%
+    );
     border-right: none;
 }
-section[data-testid="stSidebar"] * { color: #EDEDF5; }
 
-section[data-testid="stSidebar"] .block-container { padding-top: 1.5rem; }
+section[data-testid="stSidebar"] * {
+    color: #FFF7FA;
+}
+
+section[data-testid="stSidebar"] .block-container {
+    padding-top: 1.5rem;
+}
 
 .brand {
     display: flex;
     align-items: center;
     gap: 10px;
+
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 700;
-    letter-spacing: -0.01em;
-    padding: 4px 6px 18px;
+
+    padding: 4px 6px 20px;
 }
+
 .brand-mark {
-    width: 30px; height: 30px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #6F5CE0, #3D2E8F);
-    display: grid; place-items: center;
-    font-size: 15px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+
+    background: linear-gradient(
+        135deg,
+        #D94F7A,
+        #941B3D
+    );
+
+    display: grid;
+    place-items: center;
+    font-size: 17px;
 }
 
 .nav-label {
-    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+
+    font-size: 14px;
     font-weight: 600;
-    color: #8382B8 !important;
-    padding: 14px 8px 6px;
+
+    color: #EAB9C8 !important;
+
+    padding: 16px 8px 9px;
 }
 
-/* sidebar nav buttons */
+/* Sidebar buttons */
+
 section[data-testid="stSidebar"] .stButton > button {
     background: transparent;
     border: none;
-    border-radius: 8px;
-    color: #B9B8D8;
-    font-size: 14px;
+    border-radius: 10px;
+
+    color: #EFD7DF;
+
+    font-family: 'Inter', sans-serif;
+    font-size: 17px;
     font-weight: 500;
+
     text-align: left;
     justify-content: flex-start;
-    padding: 9px 12px;
-    height: auto;
-    transition: background .15s ease, color .15s ease;
+
+    padding: 13px 14px;
+
+    min-height: 46px;
+
+    transition: all .15s ease;
 }
+
 section[data-testid="stSidebar"] .stButton > button:hover {
-    background: rgba(255,255,255,.07);
+    background: rgba(255,255,255,.09);
     color: #FFFFFF;
 }
+
 section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-    background: rgba(255,255,255,.12);
+    background: #D94F7A;
     color: #FFFFFF;
+
+    font-size: 17px;
     font-weight: 600;
-    box-shadow: inset 3px 0 0 #8B7BF0;
 }
 
 .side-meta {
@@ -150,39 +221,74 @@ section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
     display: block;
     margin-bottom: 2px;
 }
-.side-meta .sub { color: #A3A2CC !important; }
+.side-meta .sub { color: #C7A4B2 !important; }
 
 /* ---------------- top bar ---------------- */
 
 .topbar {
     display: flex;
-    align-items: baseline;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
-    padding-bottom: 14px;
-    margin-bottom: 20px;
+
+    gap: 20px;
+
+    padding-top: 4px;
+    padding-bottom: 18px;
+
+    margin-bottom: 24px;
+
     border-bottom: 1px solid var(--line);
 }
+
 .topbar h1 {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 26px;
+    font-size: 32px;
     font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    margin: 0 0 3px;
+    line-height: 1.25;
+
+    color: var(--burgundy);
+
+    margin: 0 0 8px;
 }
-.topbar p { font-size: 14.5px; color: var(--muted); margin: 0; }
+
+.topbar p {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+
+    color: var(--ink-soft);
+    margin: 0;
+}
 
 .chip {
-    font-size: 13.5px;
+    font-family: 'Inter', sans-serif;
+
+    font-size: 14px;
     font-weight: 600;
-    padding: 5px 12px;
+
+    padding: 9px 16px;
+
     border-radius: 999px;
+
     white-space: nowrap;
+
+    margin-top: 2px;
 }
-.chip-good { background: #E7F4ED; color: var(--good); }
-.chip-warn { background: #FBF2E1; color: var(--warn); }
-.chip-bad  { background: #FBEAEA; color: var(--bad); }
+
+.chip-good {
+    background: #F7E6EC;
+    color: var(--burgundy);
+}
+
+.chip-warn {
+    background: #FFF3DD;
+    color: var(--warn);
+}
+
+.chip-bad {
+    background: #FBE7EA;
+    color: var(--bad);
+}
 
 /* ---------------- grid + cards ---------------- */
 
@@ -195,29 +301,66 @@ section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
 @media (max-width: 900px) {
     .grid { grid-template-columns: 1fr !important; }
 }
-
 .card {
     background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 20px 22px;
+
+    border: 1.5px solid #E4C8D2;
+    border-radius: 14px;
+
+    padding: 24px 26px;
+
+    box-shadow: 0 2px 8px rgba(91, 16, 39, 0.03);
 }
+
 .card-title {
-    font-size: 14px;
+    font-family: 'Space Grotesk', sans-serif;
+
+    font-size: 17px;
     font-weight: 600;
-    color: var(--ink);
-    margin-bottom: 14px;
+
+    color: var(--burgundy);
+
+    margin-bottom: 16px;
 }
+
 .card-title .count {
     color: var(--muted);
     font-weight: 500;
-    margin-left: 5px;
+    margin-left: 6px;
 }
 .body-text {
-    font-size: 15px;
-    line-height: 1.68;
+    font-family: 'Inter', sans-serif;
+
+    font-size: 16px;
+    line-height: 1.7;
+
     color: var(--ink-soft);
-    max-width: 68ch;
+
+    max-width: 75ch;
+}
+
+.profile-summary-title {
+    font-family: 'Space Grotesk', sans-serif;
+
+    font-size: 26px;
+    font-weight: 700;
+
+    color: var(--burgundy);
+
+    margin-bottom: 15px;
+}
+
+.profile-summary-text {
+    font-family: 'Inter', sans-serif;
+
+    font-size: 17px;
+    font-weight: 400;
+
+    line-height: 1.75;
+
+    color: var(--ink-soft);
+
+    max-width: 900px;
 }
 
 /* ---------------- score dial ---------------- */
@@ -230,57 +373,132 @@ section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
 }
 .dial-num {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 48px;
+
+    font-size: 56px;
     font-weight: 700;
+
     line-height: 1;
-    color: var(--ink);
+
+    color: var(--burgundy);
 }
-.dial-den { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.dial-den {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 6px;
+}
+
 .dial-verdict {
     text-align: center;
-    font-size: 15.5px;
-    font-weight: 600;
-    color: var(--ink);
-    margin-top: 16px;
+
+    font-family: 'Space Grotesk', sans-serif;
+
+    font-size: 18px;
+    font-weight: 700;
+
+    color: var(--burgundy);
+
+    margin-top: 18px;
 }
+
 .dial-note {
     text-align: center;
-    font-size: 13.5px;
+
+    font-size: 14px;
+
     color: var(--muted);
-    margin-top: 3px;
+
+    margin-top: 5px;
 }
 
 /* ---------------- stat strip ---------------- */
 
-.stat { border-left: 3px solid var(--line); padding-left: 14px; }
+.stat {
+    border-left: 4px solid #D94F7A;
+
+    padding-left: 18px;
+    min-height: 68px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat:nth-child(2) {
+    border-left-color: #3D9AA3;
+}
+
+.stat:nth-child(3) {
+    border-left-color: #D89A25;
+}
+
 .stat-num {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 27px;
+
+    font-size: 32px;
     font-weight: 700;
-    color: var(--ink);
+
+    color: var(--burgundy);
+
     line-height: 1.1;
 }
-.stat-lab { font-size: 13.5px; color: var(--muted); margin-top: 3px; }
+
+.stat-lab {
+    font-family: 'Inter', sans-serif;
+
+    font-size: 16px;
+    font-weight: 500;
+
+    color: var(--ink-soft);
+
+    margin-top: 5px;
+}
+.stats-card {
+    background: #FFFFFF;
+
+    border: 1.5px solid #E4C8D2;
+    border-radius: 14px;
+
+    padding: 24px 28px;
+}
 
 /* ---------------- pills + lists ---------------- */
 
-.pills { display: flex; flex-wrap: wrap; gap: 7px; }
+.pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
 .pill {
-    font-size: 13.5px;
-    font-weight: 500;
-    color: #2E4A7A;
-    background: #EEF3FB;
-    border: 1px solid #DCE6F5;
-    border-radius: 7px;
-    padding: 5px 11px;
+    font-family: 'Inter', sans-serif;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    color: var(--burgundy);
+
+    background: #F9E9EF;
+
+    border: 1px solid #EBC7D3;
+
+    border-radius: 8px;
+
+    padding: 7px 13px;
 }
 
 .rows { display: flex; flex-direction: column; gap: 11px; }
 .row {
     display: flex;
-    gap: 10px;
-    font-size: 14.5px;
-    line-height: 1.6;
+
+    gap: 11px;
+
+    font-family: 'Inter', sans-serif;
+
+    font-size: 15px;
+
+    line-height: 1.65;
+
     color: var(--ink-soft);
 }
 .row .dot {
@@ -289,17 +507,25 @@ section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
     border-radius: 50%;
     margin-top: 8px;
 }
-.dot-good { background: var(--good); }
-.dot-warn { background: var(--warn); }
-.dot-info { background: var(--indigo); }
+.dot-good {
+    background: #23845F;
+}
+
+.dot-warn {
+    background: #C58418;
+}
+
+.dot-info {
+    background: #941B3D;
+}
 
 .step { display: flex; gap: 12px; align-items: flex-start; }
 .step-n {
     flex: 0 0 auto;
     width: 22px; height: 22px;
     border-radius: 6px;
-    background: #F0EEFA;
-    color: var(--indigo);
+    background: #F8EAF0;
+    color: var(--burgundy);
     font-size: 11.5px;
     font-weight: 700;
     display: grid; place-items: center;
@@ -308,22 +534,109 @@ section[data-testid="stSidebar"] .stButton > button[kind="primary"] {
 
 .role {
     display: flex;
+
     justify-content: space-between;
     align-items: center;
-    padding: 11px 0;
+
+    padding: 15px 4px;
+
     border-bottom: 1px solid var(--line);
-    font-size: 14.5px;
+
+    font-family: 'Inter', sans-serif;
+
+    font-size: 15px;
     color: var(--ink);
-    font-weight: 500;
+
+    font-weight: 600;
 }
-.role:last-child { border-bottom: none; }
-.role .rank { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+.role:last-child {
+    border-bottom: none;
+}
+
+.role .rank {
+    font-size: 13px;
+    color: var(--burgundy);
+
+    background: var(--burgundy-soft);
+
+    padding: 5px 9px;
+    border-radius: 999px;
+
+    font-weight: 600;
+}
+
+/* ---------------- introduction ---------------- */
+
+.intro-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    background: linear-gradient(135deg, #FFF9FB, #F8EDF2);
+    border: 1px solid #EBD6DF;
+    border-radius: 14px;
+    padding: 24px 26px;
+    margin-bottom: 22px;
+    box-shadow: 0 4px 18px rgba(53, 21, 34, 0.04);
+}
+
+.intro-icon {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #D05A82, #8E3157);
+    color: #FFFFFF;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.intro-content {
+    min-width: 0;
+}
+
+.intro-box h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 23px;
+    font-weight: 700;
+    color: #24141B;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+}
+
+.intro-box p {
+    font-family: 'Inter', sans-serif;
+    font-size: 15.5px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: #5F4A52;
+    margin: 0;
+    max-width: 980px;
+}
+
+.intro-points {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    margin-top: 15px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #7A294B;
+}
+
+@media (max-width: 700px) {
+    .intro-box { padding: 20px; }
+    .intro-box h2 { font-size: 20px; }
+    .intro-box p { font-size: 14.5px; }
+}
 
 /* ---------------- empty state ---------------- */
 
 .empty {
     background: var(--surface);
-    border: 1px dashed #D3D6E4;
+    border: 1px dashed #DFCBD3;
     border-radius: 12px;
     padding: 46px 30px;
     text-align: center;
@@ -347,7 +660,7 @@ div[data-testid="stFileUploader"] {
 div[data-testid="stFileUploader"] label { font-size: 13px; font-weight: 600; }
 
 div[data-testid="stMain"] .stButton > button {
-    background: var(--indigo);
+    background: var(--burgundy);
     color: #fff;
     border: none;
     border-radius: 9px;
@@ -355,16 +668,80 @@ div[data-testid="stMain"] .stButton > button {
     font-weight: 600;
     font-size: 15px;
 }
-div[data-testid="stMain"] .stButton > button:hover { background: #32257A; }
+div[data-testid="stMain"] .stButton > button:hover { background: #7D294D; }
 div[data-testid="stMain"] .stButton > button[kind="secondary"] {
     background: var(--surface);
     color: var(--ink-soft);
     border: 1px solid var(--line);
 }
+
+.improvement-tip {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 16px;
+
+    background: #FFF7F9;
+
+    border: 1.5px solid #E7B7C7;
+    border-radius: 14px;
+
+    padding: 20px 24px;
+
+    margin-top: 20px;
+}
+
+.tip-icon {
+    width: 42px;
+    height: 42px;
+
+    border-radius: 10px;
+
+    background: #F8DDE6;
+
+    display: grid;
+    place-items: center;
+
+    font-size: 21px;
+
+    flex-shrink: 0;
+}
+
+.tip-title {
+    font-family: 'Space Grotesk', sans-serif;
+
+    font-size: 18px;
+    font-weight: 700;
+
+    color: var(--burgundy);
+
+    margin-bottom: 5px;
+}
+
+.tip-text {
+    font-family: 'Inter', sans-serif;
+
+    font-size: 15px;
+    line-height: 1.6;
+
+    color: var(--ink-soft);
+}
+
 </style>
 """
 
-st.markdown(CSS, unsafe_allow_html=True)
+def render_html(content):
+    """Render HTML through Streamlit markdown while removing Python indentation.
+
+    This keeps one shared CSS context for the whole app and prevents indented
+    HTML from being interpreted as a Markdown code block.
+    """
+    cleaned = dedent(str(content)).strip()
+    cleaned = re.sub(r"(?m)^[ \t]+", "", cleaned)
+    st.markdown(cleaned, unsafe_allow_html=True)
+
+
+render_html(CSS)
 
 
 # =========================================================
@@ -378,10 +755,10 @@ def esc(value):
 
 def tone(score):
     if score >= 80:
-        return "good", "#1F9254"
+        return "good", "#941B3D"
     if score >= 60:
-        return "warn", "#B7791F"
-    return "bad", "#C23B3B"
+        return "warn", "#C58418"
+    return "bad", "#C43D4B"
 
 
 def verdict(score):
@@ -474,22 +851,21 @@ def topbar(title, subtitle, score=None):
 
 
 def empty_state(message):
-    st.markdown(
+    render_html(
         f'<div class="empty"><h3>No analysis yet</h3><p>{esc(message)}</p></div>',
-        unsafe_allow_html=True,
-    )
+            )
 
 
 def build_report_pdf(filename, score, data):
     """Render the analysis as a one-file PDF report, returned as bytes."""
 
-    ink = HexColor("#14142B")
-    ink_soft = HexColor("#4A4B63")
-    muted = HexColor("#7B7C92")
-    indigo = HexColor("#3D2E8F")
+    ink = HexColor("#24141B")
+    ink_soft = HexColor("#5F4A52")
+    muted = HexColor("#8A737C")
+    indigo = HexColor("#9A3D63")
     _, score_hex = tone(score)
     score_colour = HexColor(score_hex)
-    line = HexColor("#E4E6EF")
+    line = HexColor("#E9DDE2")
 
     styles = getSampleStyleSheet()
     h1 = ParagraphStyle("h1", parent=styles["Title"], fontName="Helvetica-Bold",
@@ -592,9 +968,17 @@ def build_report_pdf(filename, score, data):
 
 @st.cache_resource
 def get_client():
-    key = os.getenv("GOOGLE_API_KEY") or st.secrets.get("GOOGLE_API_KEY", "")
+    key = os.getenv("GOOGLE_API_KEY", "")
+
+    if not key:
+        try:
+            key = st.secrets.get("GOOGLE_API_KEY", "")
+        except Exception:
+            key = ""
+
     if not key:
         return None
+
     return genai.Client(api_key=key)
 
 
@@ -650,10 +1034,9 @@ st.session_state.setdefault("analysis", None)
 st.session_state.setdefault("filename", None)
 
 with st.sidebar:
-    st.markdown(
+    render_html(
         '<div class="brand"><span class="brand-mark">📄</span>Resume AI</div>',
-        unsafe_allow_html=True,
-    )
+            )
 
     if st.button(
         "Upload resume",
@@ -663,7 +1046,7 @@ with st.sidebar:
         st.session_state.page = "analyze"
         st.rerun()
 
-    st.markdown('<div class="nav-label">Analysis</div>', unsafe_allow_html=True)
+    render_html('<div class="nav-label">Analysis</div>')
 
     for key, label, _ in PAGES:
         if st.button(
@@ -676,12 +1059,11 @@ with st.sidebar:
             st.rerun()
 
     if st.session_state.analysis:
-        st.markdown(
+        render_html(
             f'<div class="side-meta"><span class="fname">'
             f'{esc(st.session_state.filename)}</span>'
             f'<span class="sub">Analyzed with {esc(MODEL)}</span></div>',
-            unsafe_allow_html=True,
-        )
+                    )
 
 
 data = st.session_state.analysis or {}
@@ -699,14 +1081,34 @@ tips = data.get("tips_to_improve", [])
 
 if st.session_state.page == "analyze":
 
-    st.markdown(
+    render_html(
         topbar(
             "Upload resume",
             "Drop in a PDF and we'll score it the way an applicant tracking system would.",
             score,
         ),
-        unsafe_allow_html=True,
-    )
+            )
+
+    render_html(
+        dedent("""
+        <div class="intro-box">
+            <div class="intro-icon">✦</div>
+            <div class="intro-content">
+                <h2>Understand your resume before you apply</h2>
+                <p>
+                    Resume AI Analyzer uses AI to review your resume and show you how it may be interpreted by an Applicant Tracking System (ATS).
+                    Get an overall score, discover detected skills, understand your strengths, identify areas to improve, and explore roles that match your experience.
+                </p>
+                <div class="intro-points">
+                    <span>✓ ATS score</span>
+                    <span>✓ Skills detected</span>
+                    <span>✓ Strengths & gaps</span>
+                    <span>✓ Role suggestions</span>
+                </div>
+            </div>
+        </div>
+        """),
+            )
 
     if get_client() is None:
         st.error("Set GOOGLE_API_KEY in your environment or .streamlit/secrets.toml to run an analysis.")
@@ -744,7 +1146,7 @@ if st.session_state.page == "analyze":
                         st.error(f"Analysis failed: {exc}")
 
     with right:
-        st.markdown(
+        render_html(
             card(
                 "What you'll get",
                 bullet_rows(
@@ -758,8 +1160,7 @@ if st.session_state.page == "analyze":
                     dot="info",
                 ),
             ),
-            unsafe_allow_html=True,
-        )
+                    )
 
 
 # =========================================================
@@ -768,32 +1169,71 @@ if st.session_state.page == "analyze":
 
 elif st.session_state.page == "overview":
 
-    st.markdown(
-        topbar("Overview", "How your resume scores and what it says about you.", score),
-        unsafe_allow_html=True,
-    )
+    render_html(
+        topbar(
+            "Overview",
+            "How your resume scores and what it says about you.",
+            score
+        ),
+            )
 
     if not data:
+
         empty_state("Upload a resume to see your score.")
+
     else:
-        profile = '<div class="body-text">%s</div>' % esc(data.get("profile_summary", ""))
 
-        st.markdown(
-            f'<div class="grid g-score">'
-            f'{card("Overall score", dial(score))}'
-            f'{card("Profile summary", profile)}'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+        profile = data.get("profile_summary", "")
 
-        st.markdown(
-            f'<div class="card"><div class="grid g-3" style="margin:0">'
-            f'{stat(len(skills), "skills detected")}'
-            f'{stat(len(strengths), "strengths")}'
-            f'{stat(len(improvements), "areas to fix")}'
-            f'</div></div>',
-            unsafe_allow_html=True,
-        )
+        render_html(
+            dedent(f"""
+            <div class="grid g-score">
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Overall score
+                    </div>
+
+                    {dial(score)}
+
+                </div>
+
+                <div class="card">
+
+                    <div class="profile-summary-title">
+                        Profile Summary
+                    </div>
+
+                    <div class="profile-summary-text">
+                        {esc(profile)}
+                    </div>
+
+                </div>
+
+            </div>
+            """),
+                    )
+
+        render_html(
+            dedent(f"""
+            <div class="stats-card">
+
+                <div class="grid g-3" style="margin:0">
+
+                    {stat(len(skills), "skills detected")}
+
+                    {stat(len(strengths), "strengths")}
+
+                    {stat(len(improvements), "areas to fix")}
+
+                </div>
+
+            </div>
+            """),
+                    )
+
+    
 
 
 # =========================================================
@@ -802,21 +1242,69 @@ elif st.session_state.page == "overview":
 
 elif st.session_state.page == "skills":
 
-    st.markdown(
-        topbar("Skills", "What a parser pulled out, and where you're strong.", score),
-        unsafe_allow_html=True,
-    )
+    render_html(
+        topbar(
+            "Skills",
+            "The key skills we found in your resume.",
+            score
+        ),
+            )
 
     if not data:
-        empty_state("Upload a resume to see the skills it surfaces.")
-    else:
-        st.markdown(
-            f'<div class="grid g-lead">'
-            f'{card("Detected skills", pills(skills), count=len(skills))}'
-            f'{card("Strengths", bullet_rows(strengths, dot="good"), count=len(strengths))}'
-            f'</div>',
-            unsafe_allow_html=True,
+
+        empty_state(
+            "Upload a resume to see the skills it surfaces."
         )
+
+    else:
+
+        render_html(
+            dedent(f"""
+            <div class="grid g-lead">
+
+                {card(
+                    "Detected Skills",
+                    pills(skills),
+                    count=len(skills)
+                )}
+
+                {card(
+                    "Top Strengths",
+                    bullet_rows(
+                        strengths,
+                        dot="good"
+                    ),
+                    count=len(strengths)
+                )}
+
+            </div>
+            """),
+                    )
+
+        render_html(
+            dedent(f"""
+            <div class="grid g-2">
+
+                {card(
+                    "Skills Overview",
+                    '<div class="body-text">'
+                    'These are the technical and professional '
+                    'skills identified from your resume.'
+                    '</div>'
+                )}
+
+                {card(
+                    "What to Improve",
+                    bullet_rows(
+                        improvements,
+                        dot="warn"
+                    ),
+                    count=len(improvements)
+                )}
+
+            </div>
+            """),
+                    )
 
 
 # =========================================================
@@ -825,29 +1313,73 @@ elif st.session_state.page == "skills":
 
 elif st.session_state.page == "experience":
 
-    st.markdown(
-        topbar("Experience", "Your history as the model reads it, and the roles it fits.", score),
-        unsafe_allow_html=True,
-    )
+    render_html(
+        topbar(
+            "Experience",
+            "Your professional history and the roles it aligns with.",
+            score
+        ),
+            )
 
     if not data:
-        empty_state("Upload a resume to see your experience breakdown.")
-    else:
-        role_rows = "".join(
-            '<div class="role"><span>%s</span><span class="rank">%s</span></div>'
-            % (esc(r), "best fit" if n == 1 else "#%d" % n)
-            for n, r in enumerate(roles, 1)
-        ) or '<div class="body-text">No roles suggested.</div>'
 
-        experience = '<div class="body-text">%s</div>' % esc(data.get("experience_summary", ""))
-
-        st.markdown(
-            f'<div class="grid g-lead">'
-            f'{card("Experience summary", experience)}'
-            f'{card("Recommended roles", role_rows, count=len(roles))}'
-            f'</div>',
-            unsafe_allow_html=True,
+        empty_state(
+            "Upload a resume to see your experience breakdown."
         )
+
+    else:
+
+        experience = data.get(
+            "experience_summary",
+            "Not available."
+        )
+
+        role_rows = "".join(
+            f'<div class="role"><span>{esc(r)}</span>'
+            f'<span class="rank">{"best fit" if n == 1 else "#" + str(n)}</span></div>'
+            for n, r in enumerate(roles, 1)
+        )
+
+        if not role_rows:
+
+            role_rows = """
+            <div class="body-text">
+                No roles suggested.
+            </div>
+            """
+
+        render_html(
+            dedent(f"""
+            <div class="grid g-lead">
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Experience Summary
+                    </div>
+
+                    <div class="profile-summary-text">
+                        {esc(experience)}
+                    </div>
+
+                </div>
+
+                <div class="card">
+
+                    <div class="card-title">
+                        Recommended Roles
+                        <span class="count">
+                            {len(roles)}
+                        </span>
+                    </div>
+
+                    {role_rows}
+
+                </div>
+
+            </div>
+            """),
+                    )
 
 
 # =========================================================
@@ -856,23 +1388,76 @@ elif st.session_state.page == "experience":
 
 elif st.session_state.page == "suggestions":
 
-    st.markdown(
-        topbar("Improvements", "Fix these first — they move the score the most.", score),
-        unsafe_allow_html=True,
-    )
+    render_html(
+        topbar(
+            "Improvements",
+            "Actionable suggestions to make your resume stronger.",
+            score
+        ),
+            )
 
     if not data:
-        empty_state("Upload a resume to get specific fixes.")
-    else:
-        st.markdown(
-            f'<div class="grid g-2">'
-            f'{card("Areas to fix", bullet_rows(improvements, dot="warn"), count=len(improvements))}'
-            f'{card("How to fix them", numbered_rows(tips), count=len(tips))}'
-            f'</div>',
-            unsafe_allow_html=True,
+
+        empty_state(
+            "Upload a resume to get specific fixes."
         )
 
-        pdf_bytes = build_report_pdf(st.session_state.filename, score, data)
+    else:
+
+        render_html(
+            dedent(f"""
+            <div class="grid g-2">
+
+                {card(
+                    "Areas to Fix",
+                    bullet_rows(
+                        improvements,
+                        dot="warn"
+                    ),
+                    count=len(improvements)
+                )}
+
+                {card(
+                    "How to Fix Them",
+                    numbered_rows(tips),
+                    count=len(tips)
+                )}
+
+            </div>
+            """),
+                    )
+
+        render_html(
+            dedent("""
+            <div class="improvement-tip">
+
+                <div class="tip-icon">
+                    💡
+                </div>
+
+                <div>
+                    <div class="tip-title">
+                        Pro Tip
+                    </div>
+
+                    <div class="tip-text">
+                        Focus on the highest-impact improvements first.
+                        Small changes to wording, structure and
+                        measurable achievements can make your resume
+                        easier to understand.
+                    </div>
+                </div>
+
+            </div>
+            """),
+                    )
+
+        pdf_bytes = build_report_pdf(
+            st.session_state.filename,
+            score,
+            data
+        )
+
         st.download_button(
             "Download report (PDF)",
             data=pdf_bytes,
